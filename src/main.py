@@ -3,17 +3,26 @@ from deep_translator import GoogleTranslator
 
 app = Flask(__name__)
 
-@app.route("/translate", methods=["POST"])
-def translate():
-    data = request.json
-    text = data.get("text")
-    target_lang = data.get("target_lang", "en")
-    translated = GoogleTranslator(source='auto', target=target_lang).translate(text)
-    return jsonify({"original": text, "translated": translated})
-
-@app.route("/")
+@app.route('/')
 def home():
-    return "Server is running!", 200
+    return 'AliExpress Translation API is running!'
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+@app.route('/translate', methods=['GET'])
+def translate_text():
+    text = request.args.get('text')
+    if not text:
+        return jsonify({'error': 'Missing text parameter'}), 400
+    translated = GoogleTranslator(source='auto', target='en').translate(text)
+    return jsonify({'original': text, 'translated': translated})
+
+@app.route('/search', methods=['GET'])
+def search():
+    query = request.args.get('q')
+    if not query:
+        return jsonify({'error': 'Missing q parameter'}), 400
+    translated_query = GoogleTranslator(source='auto', target='en').translate(query)
+    # Dummy return for search query
+    return jsonify({'search_for': translated_query, 'results': []})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)
