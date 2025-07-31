@@ -1,7 +1,8 @@
 // server.js
-// --- VERSION 9.0 (Final Deployment Version with Robust Local Translation) ---
-// This version replaces the external AI translation call with a more reliable and robust
-// internal dictionary-based translation to ensure accurate results for Hebrew queries.
+// --- VERSION 9.1 (Debugging Irrelevant Results) ---
+// This version temporarily removes the 'tracking_id' from the search query.
+// This is a test to see if the tracking_id is causing the API to return irrelevant results.
+// If this works, it indicates an issue with the tracking_id's configuration in the AliExpress portal.
 
 const express = require('express');
 const cors = require('cors');
@@ -144,8 +145,8 @@ app.get('/search', async (req, res) => {
     if (!keywords) {
         return res.status(400).json({ error: 'Keywords parameter is required' });
     }
-    if (!APP_KEY || !APP_SECRET || !ACCESS_TOKEN || !REFRESH_TOKEN || !TRACKING_ID) {
-        return res.status(500).json({ error: 'Server is not configured correctly. Please check all environment variables on Render.' });
+    if (!APP_KEY || !APP_SECRET || !ACCESS_TOKEN || !REFRESH_TOKEN) {
+        return res.status(500).json({ error: 'Server is not configured correctly. Please check environment variables on Render.' });
     }
 
     // --- Using the new, reliable local translation ---
@@ -162,7 +163,7 @@ app.get('/search', async (req, res) => {
             sign_method: 'sha256',
             timestamp: new Date().getTime(),
             keywords: keywords,
-            tracking_id: TRACKING_ID,
+            // tracking_id: TRACKING_ID, // <-- Temporarily removed for debugging
             target_language: 'EN',
         };
 
@@ -205,3 +206,4 @@ app.get('/search', async (req, res) => {
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
 });
+
