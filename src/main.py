@@ -1,21 +1,19 @@
-
 from flask import Flask, request, jsonify
 from deep_translator import GoogleTranslator
 
 app = Flask(__name__)
 
-@app.route("/")
-def index():
-    return "AliExpress Translator API is running!"
-
-@app.route("/translate")
+@app.route("/translate", methods=["POST"])
 def translate():
-    text = request.args.get("text", "")
-    translated = GoogleTranslator(source='auto', target='en').translate(text)
+    data = request.json
+    text = data.get("text")
+    target_lang = data.get("target_lang", "en")
+    translated = GoogleTranslator(source='auto', target=target_lang).translate(text)
     return jsonify({"original": text, "translated": translated})
 
-@app.route("/search")
-def search():
-    keywords = request.args.get("keywords", "")
-    translated = GoogleTranslator(source='auto', target='en').translate(keywords)
-    return jsonify({"original": keywords, "translated": translated})
+@app.route("/")
+def home():
+    return "Server is running!", 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
