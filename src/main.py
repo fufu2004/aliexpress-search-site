@@ -1,100 +1,112 @@
-import os
-import hashlib
-import requests
 from flask import Flask, request, jsonify
 from deep_translator import GoogleTranslator
+import requests
+import hashlib
+import os
+from datetime import datetime
 
 app = Flask(__name__)
 
-# קריאה מהסביבה
-APP_KEY = os.environ.get("APP_KEY")
-APP_SECRET = os.environ.get("APP_SECRET")
-ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
-REFRESH_TOKEN = os.environ.get("REFRESH_TOKEN")
-TRACKING_ID = os.environ.get("TRACKING_ID")
+# ENV variables
+APP_KEY = os.getenv("APP_KEY")
+APP_SECRET = os.getenv("APP_SECRET")
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+TRACKING_ID = os.getenv("TRACKING_ID")
 
-# הדפסה של משתנים חסרים
-for var_name, value in {
-    "APP_KEY": APP_KEY,
-    "APP_SECRET": APP_SECRET,
-    "ACCESS_TOKEN": ACCESS_TOKEN,
-    "REFRESH_TOKEN": REFRESH_TOKEN,
-    "TRACKING_ID": TRACKING_ID
-}.items():
-    if not value:
-        print(f"⚠️ Environment variable '{var_name}' is MISSING!")
+
+def translate_text(text):
+    try:
+        translated = GoogleTranslator(source='auto', target='en').translate(text)
+        return translated
+    except Exception as e:
+        print("Translation failed:", e)
+        return text
+
 
 def generate_signature(params, secret):
     sorted_params = sorted(params.items())
     sign_str = ""
-    for key, value in sorted_params:
-        sign_str += key + str(value)
+    for k, v in sorted_params:
+        sign_str += f"{k}{v}"
     return hashlib.sha256((sign_str + secret).encode()).hexdigest().upper()
 
+
 def verify_token():
-    url = "https://api-sg.aliexpress.com/sync"
+    global ACCESS_TOKEN
+    if not ACCESS_TOKEN:
+        return False
+
+    test_url = "https://api-sg.aliexpress.com/sync"
     method = "aliexpress.affiliate.product.query"
-    timestamp = int(requests.utils.datetime.datetime.now().timestamp() * 1000)
+
+    timestamp = int(datetime.now().timestamp() * 1000)
 
     params = {
-        "app_key": APP_KEY,
         "method": method,
+        "app_key": APP_KEY,
         "access_token": ACCESS_TOKEN,
         "sign_method": "sha256",
         "timestamp": timestamp,
-        "tracking_id": TRACKING_ID,
         "keywords": "test",
+        "tracking_id": TRACKING_ID
     }
-
     params["sign"] = generate_signature(params, APP_SECRET)
-    response = requests.post(url, params=params)
-    return response.status_code == 200
+
+    try:
+        response = requests.post(test_url, params=params)
+        return response.status_code == 200
+    except:
+        return False
+
 
 @app.route("/")
-def index():
+def home():
     return "AliExpress Search API is running."
+
 
 @app.route("/translate")
 def translate():
-    q = request.args.get("q")
-    if not q:
+    text = request.args.get("q")
+    if not text:
         return jsonify({"error": "Missing q parameter"}), 400
 
-    translated = GoogleTranslator(source='auto', target='en').translate(q)
-    return jsonify({"original": q, "translated": translated})
+    translated = translate_text(text)
+    return jsonify({"original": text, "translated": translated})
+
 
 @app.route("/search")
 def search():
-    q = request.args.get("q")
-    if not q:
+    query = request.args.get("q")
+    if not query:
         return jsonify({"error": "Missing q parameter"}), 400
 
-    translated = GoogleTranslator(source='auto', target='en').translate(q)
-    if not verify_token():
-        return jsonify({"error": "Token verification failed"}), 403
+    translated_query = translate_text(query)
 
-    url = "https://api-sg.aliexpress.com/sync"
-    method = "aliexpress.affiliate.product.query"
-    timestamp = int(requests.utils.datetime.datetime.now().timestamp() * 1000)
+    if not verify_token():
+        return jsonify({"error": "Invalid or expired token"}), 401
+
+    timestamp = int(datetime.now().timestamp() * 1000)
 
     params = {
+        "method": "aliexpress.affiliate.product.query",
         "app_key": APP_KEY,
-        "method": method,
         "access_token": ACCESS_TOKEN,
         "sign_method": "sha256",
         "timestamp": timestamp,
+        "keywords": translated_query,
         "tracking_id": TRACKING_ID,
-        "keywords": translated,
+        "target_language": "EN"
     }
-
     params["sign"] = generate_signature(params, APP_SECRET)
-    response = requests.post(url, params=params)
 
-    if response.status_code != 200:
-        return jsonify({"error": "API call failed", "status_code": response.status_code}), 500
+    try:
+        response = requests.post("https://api-sg.aliexpress.com/sync", params=params)
+        data = response.json()
+        results = data.get("resp_result", {}).get("result", {}).get("products", [])
+        return jsonify({"results": results, "search_for": translated_query})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    data = response.json()
-    return jsonify({"results": data.get("result", {}).get("products", []), "search_for": translated})
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=10000)
+    app.run(host="0.0.0.0", port=10000)
