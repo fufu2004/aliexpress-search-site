@@ -1,10 +1,10 @@
 // server.js
-// --- VERSION 35.0 (Final Stable Version with Expanded Phrase Dictionary) ---
-// This version includes a vastly expanded internal dictionary with hundreds of
-// item-color and item-descriptor combinations for the most accurate translation.
+// --- VERSION 36.0 (Final Stable Version with Advanced Phrase Translation) ---
+// This version introduces a more advanced translation engine that correctly
+// handles multi-word phrases and individual words to ensure context is maintained.
 
 const express = require('express');
-const cors = require('cors');
+const cors =require('cors');
 const crypto = require('crypto');
 
 const app = express();
@@ -102,26 +102,40 @@ function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function translateHebrewToEnglish(text) { 
-    if (!isHebrew(text)) { return text; } 
-    console.log(`Translating: "${text}"`); 
-    let translatedText = text.replace(/[.,!?;:"']/g, ''); 
-    const sortedKeys = Object.keys(translationMap).sort((a, b) => b.length - a.length); 
-    for (const hebrewTerm of sortedKeys) { 
+// --- NEW Advanced Translation Function ---
+function translateHebrewToEnglish(text) {
+    if (!isHebrew(text)) {
+        return text;
+    }
+    console.log(`Translating with advanced dictionary: "${text}"`);
+    let remainingText = text.replace(/[.,!?;:"']/g, '');
+    const translatedParts = [];
+    
+    // Sort keys by length, descending, to match longer phrases first
+    const sortedKeys = Object.keys(translationMap).sort((a, b) => b.length - a.length);
+
+    for (const hebrewTerm of sortedKeys) {
         const escapedTerm = escapeRegExp(hebrewTerm);
-        const regex = new RegExp(escapedTerm, "g"); 
-        translatedText = translatedText.replace(regex, translationMap[hebrewTerm]); 
-    } 
-    const finalWords = translatedText.split(/\s+/).filter(word => !isHebrew(word) && word.length > 0); 
-    if (finalWords.length > 0) { 
-        const finalQuery = finalWords.join(' '); 
-        console.log(`Translated to: "${finalQuery}"`); 
-        return finalQuery; 
-    } else { 
-        console.log(`No translation found, using original.`); 
-        return text; 
-    } 
+        const regex = new RegExp(escapedTerm, "g");
+        // Check if the term exists in the remaining text
+        if (remainingText.match(regex)) {
+            // Add the English translation to our parts array
+            translatedParts.push(translationMap[hebrewTerm]);
+            // Remove the found Hebrew term from the text to avoid re-translating
+            remainingText = remainingText.replace(regex, '');
+        }
+    }
+
+    if (translatedParts.length > 0) {
+        const finalQuery = translatedParts.join(' ');
+        console.log(`Successfully translated to: "${finalQuery}"`);
+        return finalQuery;
+    } else {
+        console.log(`No translation found, using original query.`);
+        return text;
+    }
 }
+
 
 function generateSignature(params, appSecret, apiPath = null) { const sortedKeys = Object.keys(params).sort(); let signString = ''; if (apiPath) { signString += apiPath; } sortedKeys.forEach(key => { signString += key + params[key]; }); const hmac = crypto.createHmac('sha256', appSecret); hmac.update(signString); return hmac.digest('hex').toUpperCase(); }
 async function refreshAccessToken() { const fetch = (await import('node-fetch')).default; console.log('--- Access Token is invalid or expired. Attempting to refresh... ---'); const API_BASE_URL = 'https://api-sg.aliexpress.com/rest'; const API_PATH = '/auth/token/refresh'; const params = { app_key: APP_KEY, refresh_token: REFRESH_TOKEN, sign_method: 'sha256', timestamp: new Date().getTime(), }; const sign = generateSignature(params, APP_SECRET, API_PATH); params.sign = sign; const requestUrl = `${API_BASE_URL}${API_PATH}?${new URLSearchParams(params).toString()}`; try { console.log(`Sending refresh token request to: ${requestUrl}`); const response = await fetch(requestUrl, { method: 'POST' }); const data = await response.json(); if (data.access_token) { console.log('--- Successfully refreshed token! ---'); ACCESS_TOKEN = data.access_token; if (data.refresh_token) { REFRESH_TOKEN = data.refresh_token; } return true; } else { console.error('--- Failed to refresh token ---', data); return false; } } catch (error) { console.error('--- Critical error during token refresh ---', error); return false; } }
