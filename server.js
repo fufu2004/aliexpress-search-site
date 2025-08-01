@@ -1,7 +1,7 @@
 // server.js
-// --- VERSION 12.0 (Final Stable Version with Robust Local Translation) ---
-// This version reverts to the reliable internal dictionary for translation,
-// removing the external AI dependency to ensure stability and fix errors.
+// --- VERSION 13.0 (Final Stable Version with AI Translation) ---
+// This version replaces the internal dictionary with a call to a live AI model
+// for accurate, real-time translation of all Hebrew queries.
 
 const express = require('express');
 const cors = require('cors');
@@ -19,43 +19,6 @@ let ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 let REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 const TRACKING_ID = process.env.TRACKING_ID;
 
-// --- Robust, local translation dictionary ---
-const translationMap = {
-    'אוזניות אלחוטיות': 'wireless headphones',
-    'חולצת טריקו': 't-shirt',
-    'נעלי ספורט': 'sneakers',
-    'שעון חכם': 'smartwatch',
-    'תיק גב': 'backpack',
-    'טייץ': 'leggings', 'טייצים': 'leggings',
-    'חולצה': 'shirt', 'חולצות': 'shirts', 'חולצת': 'shirt',
-    'שמלה': 'dress', 'שמלות': 'dresses',
-    'מכנסיים': 'pants', 'מכנס': 'pants',
-    'גינס': 'jeans', 'ג\'ינס': 'jeans',
-    'נעליים': 'shoes', 'נעל': 'shoe',
-    'ספורט': 'sport',
-    'סניקרס': 'sneakers',
-    'מגפיים': 'boots', 'מגף': 'boot',
-    'אוזניות': 'headphones',
-    'אלחוטיות': 'wireless', 'אלחוטי': 'wireless',
-    'רחפן': 'drone',
-    'שעון': 'watch',
-    'חכם': 'smart', 'חכמה': 'smart',
-    'תיק': 'bag', 'תיקים': 'bags',
-    'גב': 'back',
-    'ארנק': 'wallet',
-    'כובע': 'hat', 'כובעים': 'hats',
-    'אדום': 'red', 'אדומה': 'red',
-    'כחול': 'blue', 'כחולה': 'blue',
-    'ירוק': 'green', 'ירוקה': 'green',
-    'שחור': 'black', 'שחורה': 'black',
-    'לבן': 'white', 'לבנה': 'white',
-    'ורוד': 'pink', 'ורודה': 'pink',
-    'צהוב': 'yellow', 'צהובה': 'yellow',
-    'גברים': 'men', 'לגבר': 'men',
-    'נשים': 'women', 'לאישה': 'women',
-    'ילדים': 'kids', 'ילד': 'boy', 'ילדה': 'girl'
-};
-
 // Function to detect if a string contains Hebrew characters
 function isHebrew(text) {
     if (!text) return false;
@@ -63,26 +26,53 @@ function isHebrew(text) {
     return hebrewRegex.test(text);
 }
 
-// Improved Local Translation Function
-function translateHebrewToEnglish(text) {
+// --- NEW: AI-Powered Translation Function ---
+async function translateHebrewToEnglish(text) {
     if (!isHebrew(text)) {
-        return text;
+        return text; // Return original text if not Hebrew
     }
-    console.log(`Translating Hebrew query with internal dictionary: "${text}"`);
-    const words = text.replace(/[.,!?;:"']/g, '').split(/\s+/);
-    const translatedWords = words
-        .map(word => translationMap[word.trim().toLowerCase()])
-        .filter(Boolean);
 
-    if (translatedWords.length > 0) {
-        const finalQuery = translatedWords.join(' ');
-        console.log(`Successfully translated to: "${finalQuery}"`);
-        return finalQuery;
-    } else {
-        console.log(`No translatable keywords found in "${text}", using original query.`);
-        return text;
+    console.log(`Translating Hebrew with AI: "${text}"`);
+    const fetch = (await import('node-fetch')).default;
+    
+    // The prompt is designed to get a clean, keyword-focused translation
+    const prompt = `Translate the following Hebrew e-commerce search query into a concise English equivalent. Return only the translated keywords, nothing else. For example, for "חולצה אדומה יפה לגברים", return "red shirt for men".\n\nHebrew: "${text}"\nEnglish:`;
+
+    const geminiApiKey = ""; // This key is provided by the execution environment
+    const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
+
+    const payload = {
+        contents: [{ parts: [{ text: prompt }] }]
+    };
+
+    try {
+        const response = await fetch(geminiApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            console.error("AI Translation API request failed:", response.status, await response.text());
+            return text; // Fallback to original text on failure
+        }
+
+        const result = await response.json();
+        const translatedText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+        if (translatedText) {
+            console.log(`Successfully translated to: "${translatedText}"`);
+            return translatedText;
+        } else {
+            console.error("Invalid response structure from AI Translation API:", result);
+            return text; // Fallback
+        }
+    } catch (error) {
+        console.error("Error calling AI Translation API:", error);
+        return text; // Fallback
     }
 }
+
 
 // Function to generate the digital signature
 function generateSignature(params, appSecret, apiPath = null) {
@@ -153,7 +143,7 @@ app.get('/search', async (req, res) => {
         return res.status(500).json({ error: 'Server is not configured correctly. Please check all environment variables on Render.' });
     }
     
-    keywords = translateHebrewToEnglish(keywords);
+    keywords = await translateHebrewToEnglish(keywords);
 
     const performSearch = async () => {
         const API_BASE_URL = 'https://api-sg.aliexpress.com/sync';
