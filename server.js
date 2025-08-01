@@ -1,6 +1,7 @@
 // server.js
-// --- VERSION 28.0 (Final Version with Hebrew Language Results) ---
-// This version requests results directly in Hebrew from the AliExpress API.
+// --- VERSION 28.0 (Final Version with Massively Expanded Dictionary) ---
+// This version includes a vastly expanded internal dictionary for stable and accurate translation,
+// covering hundreds of terms, phrases, and popular brand names.
 
 const express = require('express');
 const cors = require('cors');
@@ -18,44 +19,49 @@ let ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 let REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 const TRACKING_ID = process.env.TRACKING_ID;
 
-// --- Comprehensive, local translation dictionary ---
+// --- Massively Expanded Local Translation Dictionary ---
 const translationMap = {
     // Phrases (longest first)
     'אוזניות אלחוטיות': 'wireless headphones', 'לא שקוף': 'non see-through', 'עמיד למים': 'waterproof', 'עם כיסים': 'with pockets',
     'חולצת טריקו': 't-shirt', 'נעלי ספורט': 'sneakers', 'שעון חכם': 'smartwatch', 'תיק גב': 'backpack', 'משקפי שמש': 'sunglasses',
-    'בגד ים': 'swimsuit', 'מטען נייד': 'power bank', 'כבל טעינה': 'charging cable',
+    'בגד ים': 'swimsuit', 'מטען נייד': 'power bank', 'כבל טעינה': 'charging cable', 'שרוול ארוך': 'long sleeve', 'שרוול קצר': 'short sleeve',
+    'שלט רחוק': 'remote control', 'מכונית על שלט': 'remote control car',
 
     // Clothing
     'טייץ': 'leggings', 'טייצים': 'leggings', 'חולצה': 'shirt', 'חולצות': 'shirts', 'חולצת': 'shirt', 'שמלה': 'dress', 'שמלות': 'dresses',
     'מכנסיים': 'pants', 'מכנס': 'pants', 'גינס': 'jeans', 'ג\'ינס': 'jeans', 'זקט': 'jacket', 'ג\'קט': 'jacket', 'ג\'קטים': 'jackets',
     'מעיל': 'coat', 'סוודר': 'sweater', 'חליפה': 'suit', 'חצאית': 'skirt', 'פיג\'מה': 'pajamas', 'גרביים': 'socks', 'הלבשה תחתונה': 'lingerie',
-    'קפוצ\'ון': 'hoodie', 'טרנינג': 'tracksuit',
+    'קפוצ\'ון': 'hoodie', 'טרנינג': 'tracksuit', 'קרדיגן': 'cardigan', 'וסט': 'vest', 'בלייזר': 'blazer', 'שורטס': 'shorts', 'מכנסיים קצרים': 'shorts',
 
     // Shoes
     'נעליים': 'shoes', 'נעל': 'shoe', 'סניקרס': 'sneakers', 'מגפיים': 'boots', 'מגף': 'boot', 'סנדלים': 'sandals', 'נעלי עקב': 'high heels',
-    'כפכפים': 'slippers',
+    'כפכפים': 'slippers', 'נעלי ריצה': 'running shoes',
 
     // Electronics & Gadgets
     'אוזניות': 'headphones', 'רחפן': 'drone', 'שעון': 'watch', 'טלפון': 'phone', 'כיסוי': 'case', 'מטען': 'charger', 'מצלמה': 'camera',
     'מקלדת': 'keyboard', 'עכבר': 'mouse', 'רמקול': 'speaker', 'מקרן': 'projector', 'טאבלט': 'tablet', 'מחשב נייד': 'laptop', 'מסך מחשב': 'monitor',
+    'סוללה ניידת': 'power bank', 'כבל יו اس בי': 'usb cable', 'מצלמת רשת': 'webcam',
 
     // Accessories
     'תיק': 'bag', 'תיקים': 'bags', 'ארנק': 'wallet', 'כובע': 'hat', 'כובעים': 'hats', 'חגורה': 'belt',
     'תכשיטים': 'jewelry', 'שרשרת': 'necklace', 'צמיד': 'bracelet', 'עגילים': 'earrings', 'טבעת': 'ring', 'צעיף': 'scarf',
 
     // Home & Garden
-    'מטבח': 'kitchen', 'סלון': 'living room', 'מצעים': 'bedding', 'מגבת': 'towel', 'כרית': 'pillow', 'סיר': 'pot', 'מחבת': 'pan', 'וילון': 'curtain',
+    'מטבח': 'kitchen', 'סלון': 'living room', 'חדר שינה': 'bedroom', 'אמבטיה': 'bathroom', 'מצעים': 'bedding', 'מגבת': 'towel', 'כרית': 'pillow', 'סיר': 'pot', 'מחבת': 'pan', 'וילון': 'curtain',
     'שטיח': 'rug', 'מנורה': 'lamp', 'רהיטים': 'furniture', 'כלי עבודה': 'tools', 'גינה': 'garden', 'ספה': 'sofa', 'שולחן': 'table', 'כיסא': 'chair',
+    'סכו"ם': 'cutlery', 'צלחות': 'plates', 'כוסות': 'cups', 'בלנדר': 'blender', 'מיקסר': 'mixer',
 
     // Toys & Hobbies
     'צעצוע': 'toy', 'צעצועים': 'toys', 'בובה': 'doll', 'בובות': 'dolls', 'לגו': 'lego', 'פאזל': 'puzzle', 'משחק קופסה': 'board game',
+    'דמות פעולה': 'action figure',
 
     // Beauty & Health
     'איפור': 'makeup', 'קרם': 'cream', 'שפתון': 'lipstick', 'מברשת': 'brush', 'בושם': 'perfume', 'שמפו': 'shampoo', 'סבון': 'soap',
+    'מייקאפ': 'foundation', 'מסקרה': 'mascara', 'אייליינר': 'eyeliner', 'צללית': 'eye shadow', 'לק': 'nail polish',
 
     // Sports & Outdoors
     'ספורט': 'sport', 'טיולים': 'hiking', 'קמפינג': 'camping', 'אוהל': 'tent', 'שק שינה': 'sleeping bag', 'אופניים': 'bicycle', 'כדורגל': 'football',
-    'כדורסל': 'basketball',
+    'כדורסל': 'basketball', 'משקולות': 'weights',
 
     // Automotive
     'רכב': 'car', 'אביזרים לרכב': 'car accessories', 'כיסוי הגה': 'steering wheel cover', 'מצלמת דרך': 'dash cam',
@@ -69,19 +75,18 @@ const translationMap = {
     'שחור': 'black', 'שחורה': 'black', 'לבן': 'white', 'לבנה': 'white', 'ורוד': 'pink', 'ורודה': 'pink', 'צהוב': 'yellow', 'צהובה': 'yellow',
     'כתום': 'orange', 'כתומה': 'orange', 'סגול': 'purple', 'סגולה': 'purple', 'אפור': 'gray', 'אפורה': 'gray', 'אפורים': 'gray',
     'גדול': 'large', 'גדולה': 'large', 'קטן': 'small', 'קטנה': 'small', 'ארוך': 'long', 'ארוכה': 'long', 'קצר': 'short', 'קצרה': 'short',
-    'חדש': 'new', 'חדשה': 'new', 'זול': 'cheap', 'זולה': 'cheap', 'נוח': 'comfortable', 'נוחה': 'comfortable',
+    'חדש': 'new', 'חדשה': 'new', 'זול': 'cheap', 'זולה': 'cheap', 'נוח': 'comfortable', 'נוחה': 'comfortable', 'יפה': 'beautiful', 'אלגנטי': 'elegant',
 
     // Demographics
-    'גברים': 'men', 'לגבר': 'men',
-    'נשים': 'women', 'לאישה': 'women',
-    'ילדים': 'kids', 'ילד': 'boy', 'ילדה': 'girl', 'תינוק': 'baby', 'תינוקות': 'baby',
+    'גברים': 'men', 'לגבר': 'men', 'נשים': 'women', 'לאישה': 'women', 'ילדים': 'kids', 'ילד': 'boy', 'ילדה': 'girl', 'תינוק': 'baby', 'תינוקות': 'baby',
 
     // Popular Brands
     'נייק': 'nike', 'אדידס': 'adidas', 'זארה': 'zara', 'אפל': 'apple', 'סמסונג': 'samsung', 'שיאומי': 'xiaomi',
     'לולולמון': 'lululemon', 'אלו יוגה': 'alo yoga', 'סקצ\'רס': 'skechers', 'קרוקס': 'crocs', 'דיסון': 'dyson',
     'אנקר': 'anker', 'בייסוס': 'baseus', 'יוגרין': 'ugreen', 'סוני': 'sony', 'קנון': 'canon', 'ניקון': 'nikon',
     'שיין': 'shein', 'מנגו': 'mango', 'ברשקה': 'bershka', 'אנדר ארמור': 'under armour', 'פומה': 'puma', 'ריבוק': 'reebok',
-    'לגו': 'lego', 'פלייסטיישן': 'playstation', 'אקסבוקס': 'xbox', 'נינטנדו': 'nintendo'
+    'לגו': 'lego', 'פלייסטיישן': 'playstation', 'אקסבוקס': 'xbox', 'נינטנדו': 'nintendo', 'דיג\'ייאיי': 'dji', 'גופרו': 'gopro',
+    'ג\'ייביאל': 'jbl', 'בוס': 'bose', 'לוריאל': 'l\'oreal', 'מייבלין': 'maybelline'
 };
 
 function isHebrew(text) { if (!text) return false; const hebrewRegex = /[\u0590-\u05FF]/; return hebrewRegex.test(text); }
@@ -93,7 +98,7 @@ async function refreshAccessToken() { const fetch = (await import('node-fetch'))
 app.get('/search', async (req, res) => {
     const fetch = (await import('node-fetch')).default;
     let keywords = req.query.keywords;
-    const pageNo = req.query.page_no || '1';
+    const pageNo = req.query.page_no || '1'; // --- NEW: Get page number from query ---
 
     if (!keywords) {
         return res.status(400).json({ error: 'Keywords parameter is required' });
@@ -102,7 +107,7 @@ app.get('/search', async (req, res) => {
         return res.status(500).json({ error: 'Server is not configured correctly.' });
     }
     
-    let searchKeywords = translateHebrewToEnglish(keywords);
+    keywords = translateHebrewToEnglish(keywords);
 
     const performSearch = async () => {
         const API_BASE_URL = 'https://api-sg.aliexpress.com/sync';
@@ -114,11 +119,11 @@ app.get('/search', async (req, res) => {
             method: METHOD_NAME,
             sign_method: 'sha256',
             timestamp: new Date().getTime(),
-            keywords: searchKeywords,
+            keywords: keywords,
             tracking_id: TRACKING_ID,
-            target_language: 'HE', // --- CHANGED: Requesting results in Hebrew ---
-            page_no: pageNo,
-            page_size: '50'
+            target_language: 'EN',
+            page_no: pageNo, // --- NEW: Pass page number to the API ---
+            page_size: '50' // Request the maximum number of results per page
         };
 
         const sign = generateSignature(params, APP_SECRET);
