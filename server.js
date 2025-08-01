@@ -1,7 +1,7 @@
 // server.js
-// --- VERSION 25.2 (Fix for Category API Signature - Removed Access Token) ---
-// This version removes the access_token from the category API call, as it's often
-// not required for system-level calls and can cause signature errors.
+// --- VERSION 25.3 (Final Fix for Category API Signature) ---
+// This version corrects the signature generation for the category API call
+// by removing the 'method' parameter from the signature base string, as per documentation.
 
 const express = require('express');
 const cors = require('cors');
@@ -93,19 +93,24 @@ app.get('/categories', async (req, res) => {
         const METHOD_NAME = 'aliexpress.affiliate.category.get';
         const API_PATH = '/' + METHOD_NAME;
 
-        const params = {
+        // --- FIX: Parameters for signature should NOT include 'method' ---
+        const paramsForSignature = {
             app_key: APP_KEY,
-            // access_token: ACCESS_TOKEN, // <-- REMOVED
-            method: METHOD_NAME,
             sign_method: 'sha256',
             timestamp: new Date().getTime(),
         };
-
+        
         // Generate signature using the System Interface method (with apiPath)
-        const sign = generateSignature(params, APP_SECRET, API_PATH);
-        params.sign = sign;
+        const sign = generateSignature(paramsForSignature, APP_SECRET, API_PATH);
+        
+        // Final parameters for the URL include the method and the signature
+        const finalParams = {
+            ...paramsForSignature,
+            method: METHOD_NAME, // Method is needed for the final URL but not for the signature
+            sign: sign
+        };
 
-        const requestUrl = `${API_BASE_URL}${API_PATH}?${new URLSearchParams(params).toString()}`;
+        const requestUrl = `${API_BASE_URL}${API_PATH}?${new URLSearchParams(finalParams).toString()}`;
         
         console.log(`Forwarding request to AliExpress: ${requestUrl}`);
         const apiResponse = await fetch(requestUrl, { method: 'POST' });
