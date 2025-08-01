@@ -144,7 +144,8 @@
             loadMoreContainer.classList.add('hidden');
 
             const params = new URLSearchParams({ keywords: currentQuery, page_no: currentPage });
-            const requestUrl = `${PROXY_ENDPOINT}?${params.toString()}`;
+            // --- FIX: Add a cache-busting parameter to ensure each request is unique ---
+            const requestUrl = `${PROXY_ENDPOINT}?${params.toString()}&_=${new Date().getTime()}`;
 
             try {
                 const response = await fetch(requestUrl);
@@ -188,7 +189,6 @@
                 let currencySymbol = product.sale_price_currency === 'USD' ? '$' : '₪';
                 let url = product.promotion_link || product.product_detail_url || '#';
                 
-                // --- NEW: Convert URL to Hebrew version ---
                 if (url.includes('aliexpress.com')) {
                     url = url.replace('www.aliexpress.com', 'he.aliexpress.com');
                 }
