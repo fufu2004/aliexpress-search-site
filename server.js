@@ -1,7 +1,7 @@
 // server.js
-// --- VERSION 25.1 (Fix for Category API Signature) ---
-// This version corrects the signature generation method for the category API call,
-// treating it as a System Interface call as required by the documentation.
+// --- VERSION 25.2 (Fix for Category API Signature - Removed Access Token) ---
+// This version removes the access_token from the category API call, as it's often
+// not required for system-level calls and can cause signature errors.
 
 const express = require('express');
 const cors = require('cors');
@@ -95,7 +95,7 @@ app.get('/categories', async (req, res) => {
 
         const params = {
             app_key: APP_KEY,
-            access_token: ACCESS_TOKEN,
+            // access_token: ACCESS_TOKEN, // <-- REMOVED
             method: METHOD_NAME,
             sign_method: 'sha256',
             timestamp: new Date().getTime(),
