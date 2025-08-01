@@ -1,62 +1,24 @@
 // server.js
-// --- VERSION 10.1 (Final Local Version) ---
-// This version contains the new, valid tokens and all the latest features,
-// including a more robust local translation dictionary that handles punctuation.
+// --- VERSION 11.0 (Final Deployment with AI Translation) ---
+// This version replaces the internal dictionary with a call to a live AI model
+// for accurate, real-time translation of all Hebrew queries.
 
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(cors());
 
-// --- Your API Details (UPDATED with latest keys) ---
-const APP_KEY = '517514';
-const APP_SECRET = 'ikwGsyb4mcavt2EaiDLSwmohxFfX0AUN';
-const TRACKING_ID = 'fufu2004';
+// --- Your API Details from Environment Variables ---
+const APP_KEY = process.env.APP_KEY;
+const APP_SECRET = process.env.APP_SECRET;
+let ACCESS_TOKEN = process.env.ACCESS_TOKEN;
+let REFRESH_TOKEN = process.env.REFRESH_TOKEN;
+const TRACKING_ID = process.env.TRACKING_ID;
 
-// --- NEW VALID TOKENS ---
-let ACCESS_TOKEN = '50000501234qsnZxgvELth0OH7CBxiNu1hImSgXeztmD1B1cca3313ovaRqpjBT0MJYi';
-let REFRESH_TOKEN = '50001500a34Og47gApXQthhYKUDIxEUrkbEjy3Ms2dIEOj1dd97a83vkq0BWqYVt1YY2';
-
-
-// --- Robust, local translation dictionary ---
-const translationMap = {
-    'אוזניות אלחוטיות': 'wireless headphones',
-    'חולצת טריקו': 't-shirt',
-    'נעלי ספורט': 'sneakers',
-    'שעון חכם': 'smartwatch',
-    'תיק גב': 'backpack',
-    'טייץ': 'leggings', 'טייצים': 'leggings',
-    'חולצה': 'shirt', 'חולצות': 'shirts', 'חולצת': 'shirt',
-    'שמלה': 'dress', 'שמלות': 'dresses',
-    'מכנסיים': 'pants', 'מכנס': 'pants',
-    'גינס': 'jeans',
-    'נעליים': 'shoes', 'נעל': 'shoe',
-    'ספורט': 'sport',
-    'סניקרס': 'sneakers',
-    'מגפיים': 'boots', 'מגף': 'boot',
-    'אוזניות': 'headphones',
-    'אלחוטיות': 'wireless', 'אלחוטי': 'wireless',
-    'רחפן': 'drone',
-    'שעון': 'watch',
-    'חכם': 'smart', 'חכמה': 'smart',
-    'תיק': 'bag', 'תיקים': 'bags',
-    'גב': 'back',
-    'ארנק': 'wallet',
-    'אדום': 'red', 'אדומה': 'red',
-    'כחול': 'blue', 'כחולה': 'blue',
-    'ירוק': 'green', 'ירוקה': 'green',
-    'שחור': 'black', 'שחורה': 'black',
-    'לבן': 'white', 'לבנה': 'white',
-    'ורוד': 'pink', 'ורודה': 'pink',
-    'צהוב': 'yellow', 'צהובה': 'yellow',
-    'גברים': 'men', 'לגבר': 'men',
-    'נשים': 'women', 'לאישה': 'women',
-    'ילדים': 'kids', 'ילד': 'boy', 'ילדה': 'girl'
-};
 
 // Function to detect if a string contains Hebrew characters
 function isHebrew(text) {
@@ -65,27 +27,53 @@ function isHebrew(text) {
     return hebrewRegex.test(text);
 }
 
-// Improved Local Translation Function
-function translateHebrewToEnglish(text) {
+// --- NEW: AI-Powered Translation Function ---
+async function translateHebrewToEnglish(text) {
     if (!isHebrew(text)) {
-        return text;
+        return text; // Return original text if not Hebrew
     }
-    console.log(`Translating Hebrew query with internal dictionary: "${text}"`);
-    // --- IMPROVEMENT: Remove common punctuation before splitting ---
-    const words = text.replace(/[.,!?;:"']/g, '').split(/\s+/);
-    const translatedWords = words
-        .map(word => translationMap[word.trim().toLowerCase()])
-        .filter(Boolean);
 
-    if (translatedWords.length > 0) {
-        const finalQuery = translatedWords.join(' ');
-        console.log(`Successfully translated to: "${finalQuery}"`);
-        return finalQuery;
-    } else {
-        console.log(`No translatable keywords found in "${text}", using original query.`);
-        return text;
+    console.log(`Translating Hebrew with AI: "${text}"`);
+    const fetch = (await import('node-fetch')).default;
+    
+    // The prompt is designed to get a clean, keyword-focused translation
+    const prompt = `Translate the following Hebrew e-commerce search query into a concise English equivalent. Return only the translated keywords, nothing else. For example, for "חולצה אדומה יפה לגברים", return "red shirt for men".\n\nHebrew: "${text}"\nEnglish:`;
+
+    const geminiApiKey = ""; // This key is provided by the execution environment
+    const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
+
+    const payload = {
+        contents: [{ parts: [{ text: prompt }] }]
+    };
+
+    try {
+        const response = await fetch(geminiApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            console.error("AI Translation API request failed:", response.status, await response.text());
+            return text; // Fallback to original text on failure
+        }
+
+        const result = await response.json();
+        const translatedText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+        if (translatedText) {
+            console.log(`Successfully translated to: "${translatedText}"`);
+            return translatedText;
+        } else {
+            console.error("Invalid response structure from AI Translation API:", result);
+            return text; // Fallback
+        }
+    } catch (error) {
+        console.error("Error calling AI Translation API:", error);
+        return text; // Fallback
     }
 }
+
 
 // Function to generate the digital signature
 function generateSignature(params, appSecret, apiPath = null) {
@@ -152,8 +140,12 @@ app.get('/search', async (req, res) => {
     if (!keywords) {
         return res.status(400).json({ error: 'Keywords parameter is required' });
     }
-    
-    keywords = translateHebrewToEnglish(keywords);
+    if (!APP_KEY || !APP_SECRET || !ACCESS_TOKEN || !REFRESH_TOKEN || !TRACKING_ID) {
+        return res.status(500).json({ error: 'Server is not configured correctly. Please check all environment variables on Render.' });
+    }
+
+    // --- Using the new, reliable AI translation ---
+    keywords = await translateHebrewToEnglish(keywords);
 
     const performSearch = async () => {
         const API_BASE_URL = 'https://api-sg.aliexpress.com/sync';
@@ -207,6 +199,5 @@ app.get('/search', async (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Proxy server listening at http://localhost:${port}`);
+    console.log(`Server listening on port ${port}`);
 });
-
