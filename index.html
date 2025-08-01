@@ -55,7 +55,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                         חפש
                     </button>
-                    <input type="text" id="search-input" placeholder="לדוגמה: חולצה אדומה..." class="w-full p-3 text-lg bg-transparent border-none focus:ring-0 text-right" style="outline: none;">
+                    <input type="text" id="search-input" placeholder="חולצה אדומה" class="w-full p-3 text-lg bg-transparent border-none focus:ring-0 text-right" style="outline: none;">
                 </form>
                 <input type="file" id="image-upload-input" class="hidden" accept="image/*">
             </div>
@@ -63,57 +63,24 @@
     </header>
 
     <!-- Search Results Area -->
-    <main id="results-main" class="container mx-auto px-6 py-8">
+    <main class="container mx-auto px-6 py-8">
         <div id="results-title" class="text-2xl font-bold mb-4 text-right hidden"></div>
         <div id="results-area" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
              <!-- תוצאות החיפוש יופיעו כאן -->
         </div>
+        
+        <!-- NEW: Load More Button Container -->
+        <div id="load-more-container" class="text-center mt-8 hidden">
+            <button id="load-more-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-full text-lg transition duration-300">
+                טען עוד תוצאות
+            </button>
+        </div>
+
         <div id="loader-container" class="text-center py-10 hidden"><div class="loader"></div><p class="text-gray-600 mt-2">מחפש מוצרים...</p></div>
         <div id="message-container" class="text-center py-10 text-xl text-gray-500 hidden"></div>
     </main>
 
-    <!-- Features Section -->
-    <section class="py-16 md:py-24 bg-white">
-        <div class="container mx-auto px-6">
-            <div class="text-center mb-12">
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800">אז מה האתר שלנו יודע לעשות?</h2>
-                <p class="text-lg text-gray-600 mt-2">יותר ממה שאתם מדמיינים.</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-                <div class="p-6 bg-gray-50 rounded-lg">
-                    <div class="flex items-center justify-center h-16 w-16 bg-blue-100 text-blue-600 rounded-full mx-auto mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg></div>
-                    <h3 class="text-xl font-bold mb-2">להבין אתכם באמת</h3><p class="text-gray-600">תארו מה אתם צריכים בשפה טבעית, וה-AI שלנו יבין וימצא לכם את המוצרים הרלוונטיים.</p>
-                </div>
-                <div class="p-6 bg-gray-50 rounded-lg">
-                    <div class="flex items-center justify-center h-16 w-16 bg-orange-100 text-orange-600 rounded-full mx-auto mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.657 7.343A8 8 0 0117.657 18.657z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1014.12 11.88l-4.242 4.242z" /></svg></div>
-                    <h3 class="text-xl font-bold mb-2">למצוא חלופות למותגים</h3><p class="text-gray-600">חולמים על Lululemon? חפשו את שם המותג וקבלו את כל החלופות המומלצות.</p>
-                </div>
-                <div class="p-6 bg-gray-50 rounded-lg">
-                    <div class="flex items-center justify-center h-16 w-16 bg-teal-100 text-teal-600 rounded-full mx-auto mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
-                    <h3 class="text-xl font-bold mb-2">לחפש באמצעות תמונה</h3><p class="text-gray-600">ראיתם משהו שאהבתם? העלו תמונה, וה-AI יסרוק וימצא לכם פריטים דומים ברגע.</p>
-                </div>
-                <div class="p-6 bg-gray-50 rounded-lg">
-                    <div class="flex items-center justify-center h-16 w-16 bg-purple-100 text-purple-600 rounded-full mx-auto mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg></div>
-                    <h3 class="text-xl font-bold mb-2">להציע פריטים משלימים</h3><p class="text-gray-600">מצאתם פריט? המערכת החכמה תציע לכם מוצרים משלימים להרכבת הלוק המושלם.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Final CTA Section -->
-    <section class="bg-gray-800 text-white">
-        <div class="container mx-auto px-6 py-16 text-center">
-            <h2 class="text-3xl font-bold mb-4">מוכנים לחוויית שופינג שתחסוך לכם זמן וכסף?</h2>
-            <p class="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-                הצטרפו לאלפי משתמשים שכבר קונים חכם יותר.
-            </p>
-            <a href="#search-section" class="inline-block bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg text-xl transition duration-300 transform hover:scale-105 shadow-lg">
-                כן, אני רוצה לחפש!
-            </a>
-        </div>
-    </section>
-
-    <footer class="bg-gray-900 text-gray-400">
+    <footer class="bg-gray-800 text-gray-300">
         <div class="container mx-auto px-6 py-4 text-center text-sm">&copy; 2025 מנוע חיפוש חכם. כל הזכויות שמורות.</div>
     </footer>
 
@@ -126,35 +93,57 @@
         const resultsTitle = document.getElementById('results-title');
         const loaderContainer = document.getElementById('loader-container');
         const messageContainer = document.getElementById('message-container');
+        const loadMoreContainer = document.getElementById('load-more-container');
+        const loadMoreBtn = document.getElementById('load-more-btn');
         
         const PROXY_ENDPOINT = 'https://aliexpress-proxy-whm0.onrender.com/search';
+
+        let currentPage = 1;
+        let currentQuery = '';
+        let isLoading = false;
 
         searchForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const query = searchInput.value.trim();
             if (query) {
-                fetchProducts(query);
+                currentQuery = query;
+                fetchProducts(false); // New search, not appending
             }
         });
 
-        imageSearchBtn.addEventListener('click', () => {
-            imageUploadInput.click();
+        loadMoreBtn.addEventListener('click', () => {
+            if (!isLoading) {
+                fetchProducts(true); // Load more, appending
+            }
         });
 
+        imageSearchBtn.addEventListener('click', () => { imageUploadInput.click(); });
         imageUploadInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file) {
-                alert(`חיפוש תמונה עדיין בפיתוח. הקובץ שנבחר: ${file.name}`);
-            }
+            if (file) { alert(`חיפוש תמונה עדיין בפיתוח. הקובץ שנבחר: ${file.name}`); }
         });
 
-        async function fetchProducts(query) {
-            resultsArea.innerHTML = '';
+        async function fetchProducts(isAppending = false) {
+            if (isLoading) return;
+            isLoading = true;
+
+            if (!isAppending) {
+                currentPage = 1;
+                resultsArea.innerHTML = '';
+            } else {
+                currentPage++;
+            }
+
             messageContainer.classList.add('hidden');
             loaderContainer.classList.remove('hidden');
-            resultsTitle.classList.add('hidden');
+            if (isAppending) {
+                loadMoreBtn.textContent = 'טוען...';
+            } else {
+                resultsTitle.classList.add('hidden');
+            }
+            loadMoreContainer.classList.add('hidden');
 
-            const params = new URLSearchParams({ keywords: query });
+            const params = new URLSearchParams({ keywords: currentQuery, page_no: currentPage });
             const requestUrl = `${PROXY_ENDPOINT}?${params.toString()}`;
 
             try {
@@ -165,20 +154,30 @@
                 const errorResponse = data.error_response || data.aliexpress_affiliate_product_query_response?.error_response;
                 if (errorResponse) { throw new Error(`API Error: ${errorResponse.msg}`); }
 
-                const productsList = data.aliexpress_affiliate_product_query_response?.resp_result?.result?.products?.product || [];
+                const resultData = data.aliexpress_affiliate_product_query_response?.resp_result?.result;
+                const productsList = resultData?.products?.product || [];
+                const isFinished = resultData?.is_finished === 'true' || productsList.length === 0;
                 
-                loaderContainer.classList.add('hidden');
-
                 if (productsList.length > 0) {
-                    displayProducts(productsList, query);
+                    displayProducts(productsList, isAppending);
+                    if (!isFinished) {
+                        loadMoreContainer.classList.remove('hidden');
+                    }
                 } else {
-                    displayMessage('לא נמצאו מוצרים התואמים לחיפוש שלך.');
+                    if (!isAppending) {
+                        displayMessage('לא נמצאו מוצרים התואמים לחיפוש שלך.');
+                    }
                 }
 
             } catch (error) {
                 console.error('Error fetching products:', error);
+                if (!isAppending) {
+                    displayMessage(`אופס! אירעה שגיאה: ${error.message}`);
+                }
+            } finally {
+                isLoading = false;
                 loaderContainer.classList.add('hidden');
-                displayMessage(`אופס! אירעה שגיאה: ${error.message}`);
+                loadMoreBtn.textContent = 'טען עוד תוצאות';
             }
         }
         
@@ -196,12 +195,17 @@
             });
         }
 
-        function displayProducts(products, query) {
+        function displayProducts(products, isAppending) {
             const parsedProducts = parseApiResults(products);
-            resultsArea.innerHTML = parsedProducts.map(p => createProductCard(p)).join('');
-            
-            resultsTitle.textContent = `תוצאות עבור: "${query}"`;
-            resultsTitle.classList.remove('hidden');
+            const newHtml = parsedProducts.map(p => createProductCard(p)).join('');
+
+            if (isAppending) {
+                resultsArea.insertAdjacentHTML('beforeend', newHtml);
+            } else {
+                resultsArea.innerHTML = newHtml;
+                resultsTitle.textContent = `תוצאות עבור: "${currentQuery}"`;
+                resultsTitle.classList.remove('hidden');
+            }
         }
 
         function createProductCard(product) {
@@ -211,12 +215,12 @@
                         <img src="${product.image}" alt="${product.title}" class="w-full h-48 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x400/e2e8f0/94a3b8?text=Image+Unavailable';">
                     </a>
                     <div class="p-4 flex-grow flex flex-col">
-                        <h3 class="text-md font-semibold text-gray-800 flex-grow">
+                        <h3 class="text-sm font-semibold text-gray-800 flex-grow">
                             <a href="${product.url}" target="_blank" rel="noopener noreferrer" class="hover:text-red-500">${product.title}</a>
                         </h3>
-                        <div class="mt-4 flex justify-between items-center">
-                            <span class="text-xl font-bold text-red-600">${product.price}</span>
-                            <a href="${product.url}" target="_blank" rel="noopener noreferrer" class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition">
+                        <div class="mt-2 flex justify-between items-center">
+                            <span class="text-lg font-bold text-red-600">${product.price}</span>
+                            <a href="${product.url}" target="_blank" rel="noopener noreferrer" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-3 rounded-lg transition">
                                 לרכישה
                             </a>
                         </div>
