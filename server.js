@@ -1,7 +1,7 @@
 // server.js
-// --- VERSION 13.0 (Final Stable Version with AI Translation) ---
-// This version replaces the internal dictionary with a call to a live AI model
-// for accurate, real-time translation of all Hebrew queries.
+// --- VERSION 15.0 (Final Version with Direct Hebrew Search) ---
+// This version removes all internal translation logic and sends Hebrew queries
+// directly to the AliExpress API to test its native language support.
 
 const express = require('express');
 const cors = require('cors');
@@ -18,61 +18,6 @@ const APP_SECRET = process.env.APP_SECRET;
 let ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 let REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 const TRACKING_ID = process.env.TRACKING_ID;
-
-// Function to detect if a string contains Hebrew characters
-function isHebrew(text) {
-    if (!text) return false;
-    const hebrewRegex = /[\u0590-\u05FF]/;
-    return hebrewRegex.test(text);
-}
-
-// --- NEW: AI-Powered Translation Function ---
-async function translateHebrewToEnglish(text) {
-    if (!isHebrew(text)) {
-        return text; // Return original text if not Hebrew
-    }
-
-    console.log(`Translating Hebrew with AI: "${text}"`);
-    const fetch = (await import('node-fetch')).default;
-    
-    // The prompt is designed to get a clean, keyword-focused translation
-    const prompt = `Translate the following Hebrew e-commerce search query into a concise English equivalent. Return only the translated keywords, nothing else. For example, for "חולצה אדומה יפה לגברים", return "red shirt for men".\n\nHebrew: "${text}"\nEnglish:`;
-
-    const geminiApiKey = ""; // This key is provided by the execution environment
-    const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
-
-    const payload = {
-        contents: [{ parts: [{ text: prompt }] }]
-    };
-
-    try {
-        const response = await fetch(geminiApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            console.error("AI Translation API request failed:", response.status, await response.text());
-            return text; // Fallback to original text on failure
-        }
-
-        const result = await response.json();
-        const translatedText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-
-        if (translatedText) {
-            console.log(`Successfully translated to: "${translatedText}"`);
-            return translatedText;
-        } else {
-            console.error("Invalid response structure from AI Translation API:", result);
-            return text; // Fallback
-        }
-    } catch (error) {
-        console.error("Error calling AI Translation API:", error);
-        return text; // Fallback
-    }
-}
-
 
 // Function to generate the digital signature
 function generateSignature(params, appSecret, apiPath = null) {
@@ -134,7 +79,7 @@ async function refreshAccessToken() {
 
 app.get('/search', async (req, res) => {
     const fetch = (await import('node-fetch')).default;
-    let keywords = req.query.keywords;
+    const keywords = req.query.keywords;
 
     if (!keywords) {
         return res.status(400).json({ error: 'Keywords parameter is required' });
@@ -143,8 +88,6 @@ app.get('/search', async (req, res) => {
         return res.status(500).json({ error: 'Server is not configured correctly. Please check all environment variables on Render.' });
     }
     
-    keywords = await translateHebrewToEnglish(keywords);
-
     const performSearch = async () => {
         const API_BASE_URL = 'https://api-sg.aliexpress.com/sync';
         const METHOD_NAME = 'aliexpress.affiliate.product.query';
@@ -155,9 +98,9 @@ app.get('/search', async (req, res) => {
             method: METHOD_NAME,
             sign_method: 'sha256',
             timestamp: new Date().getTime(),
-            keywords: keywords,
+            keywords: keywords, // Sending the original query directly
             tracking_id: TRACKING_ID,
-            target_language: 'EN',
+            target_language: 'HE', // Requesting results in Hebrew
         };
 
         const sign = generateSignature(params, APP_SECRET);
