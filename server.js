@@ -1,7 +1,7 @@
 // server.js
-// --- VERSION 20.0 (Final Version with Advanced Dictionary Translation) ---
-// This version uses an advanced internal dictionary to parse and translate
-// full Hebrew sentences, ensuring stable and accurate search results.
+// --- VERSION 23.0 (Final Stable Version with Massively Expanded Dictionary & Brands) ---
+// This version includes a vastly expanded internal dictionary for stable and accurate translation,
+// covering hundreds of terms and popular brand names.
 
 const express = require('express');
 const cors = require('cors');
@@ -19,39 +19,68 @@ let ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 let REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 const TRACKING_ID = process.env.TRACKING_ID;
 
-// --- Comprehensive, local translation dictionary ---
+// --- Massively Expanded Local Translation Dictionary ---
 const translationMap = {
-    'אוזניות אלחוטיות': 'wireless headphones',
-    'לא שקוף': 'non see-through',
-    'עמיד למים': 'waterproof',
-    'עם כיסים': 'with pockets',
-    'חולצת טריקו': 't-shirt',
-    'נעלי ספורט': 'sneakers',
-    'שעון חכם': 'smartwatch',
-    'תיק גב': 'backpack',
-    'טייץ': 'leggings', 'טייצים': 'leggings',
-    'חולצה': 'shirt', 'חולצות': 'shirts', 'חולצת': 'shirt',
-    'שמלה': 'dress', 'שמלות': 'dresses',
-    'מכנסיים': 'pants', 'מכנס': 'pants',
-    'גינס': 'jeans', 'ג\'ינס': 'jeans',
-    'זקט': 'jacket', 'ג\'קט': 'jacket', 'ג\'קטים': 'jackets',
-    'מעיל': 'coat', 'סוודר': 'sweater', 'חליפה': 'suit', 'חצאית': 'skirt', 'בגד ים': 'swimsuit',
-    'נעליים': 'shoes', 'נעל': 'shoe',
-    'ספורט': 'sport', 'אימון': 'workout', 'אימונים': 'workout',
-    'יוגה': 'yoga',
-    'סניקרס': 'sneakers',
-    'מגפיים': 'boots', 'מגף': 'boot', 'סנדלים': 'sandals',
-    'אוזניות': 'headphones',
-    'אלחוטיות': 'wireless', 'אלחוטי': 'wireless',
-    'רחפן': 'drone', 'שעון': 'watch', 'טלפון': 'phone', 'כיסוי': 'case', 'מטען': 'charger', 'מצלמה': 'camera',
-    'חכם': 'smart', 'חכמה': 'smart',
-    'תיק': 'bag', 'תיקים': 'bags', 'גב': 'back', 'ארנק': 'wallet', 'כובע': 'hat', 'כובעים': 'hats', 'משקפי שמש': 'sunglasses',
-    'תכשיטים': 'jewelry', 'שרשרת': 'necklace', 'צמיד': 'bracelet',
-    'אדום': 'red', 'אדומה': 'red', 'כחול': 'blue', 'כחולה': 'blue', 'ירוק': 'green', 'ירוקה': 'green', 'שחור': 'black', 'שחורה': 'black',
-    'לבן': 'white', 'לבנה': 'white', 'ורוד': 'pink', 'ורודה': 'pink', 'צהוב': 'yellow', 'צהובה': 'yellow', 'כתום': 'orange', 'כתומה': 'orange',
-    'סגול': 'purple', 'סגולה': 'purple', 'אפור': 'gray', 'אפורה': 'gray', 'אפורים': 'gray',
+    // Phrases (longest first)
+    'אוזניות אלחוטיות': 'wireless headphones', 'לא שקוף': 'non see-through', 'עמיד למים': 'waterproof', 'עם כיסים': 'with pockets',
+    'חולצת טריקו': 't-shirt', 'נעלי ספורט': 'sneakers', 'שעון חכם': 'smartwatch', 'תיק גב': 'backpack', 'משקפי שמש': 'sunglasses',
+    'בגד ים': 'swimsuit', 'מטען נייד': 'power bank', 'כבל טעינה': 'charging cable',
+
+    // Clothing
+    'טייץ': 'leggings', 'טייצים': 'leggings', 'חולצה': 'shirt', 'חולצות': 'shirts', 'חולצת': 'shirt', 'שמלה': 'dress', 'שמלות': 'dresses',
+    'מכנסיים': 'pants', 'מכנס': 'pants', 'גינס': 'jeans', 'ג\'ינס': 'jeans', 'זקט': 'jacket', 'ג\'קט': 'jacket', 'ג\'קטים': 'jackets',
+    'מעיל': 'coat', 'סוודר': 'sweater', 'חליפה': 'suit', 'חצאית': 'skirt', 'פיג\'מה': 'pajamas', 'גרביים': 'socks', 'הלבשה תחתונה': 'lingerie',
+    'קפוצ\'ון': 'hoodie', 'טרנינג': 'tracksuit',
+
+    // Shoes
+    'נעליים': 'shoes', 'נעל': 'shoe', 'סניקרס': 'sneakers', 'מגפיים': 'boots', 'מגף': 'boot', 'סנדלים': 'sandals', 'נעלי עקב': 'high heels',
+    'כפכפים': 'slippers',
+
+    // Electronics & Gadgets
+    'אוזניות': 'headphones', 'רחפן': 'drone', 'שעון': 'watch', 'טלפון': 'phone', 'כיסוי': 'case', 'מטען': 'charger', 'מצלמה': 'camera',
+    'מקלדת': 'keyboard', 'עכבר': 'mouse', 'רמקול': 'speaker', 'מקרן': 'projector', 'טאבלט': 'tablet', 'מחשב נייד': 'laptop', 'מסך מחשב': 'monitor',
+
+    // Accessories
+    'תיק': 'bag', 'תיקים': 'bags', 'ארנק': 'wallet', 'כובע': 'hat', 'כובעים': 'hats', 'חגורה': 'belt',
+    'תכשיטים': 'jewelry', 'שרשרת': 'necklace', 'צמיד': 'bracelet', 'עגילים': 'earrings', 'טבעת': 'ring', 'צעיף': 'scarf',
+
+    // Home & Garden
+    'מטבח': 'kitchen', 'סלון': 'living room', 'מצעים': 'bedding', 'מגבת': 'towel', 'כרית': 'pillow', 'סיר': 'pot', 'מחבת': 'pan', 'וילון': 'curtain',
+    'שטיח': 'rug', 'מנורה': 'lamp', 'רהיטים': 'furniture', 'כלי עבודה': 'tools', 'גינה': 'garden', 'ספה': 'sofa', 'שולחן': 'table', 'כיסא': 'chair',
+
+    // Toys & Hobbies
+    'צעצוע': 'toy', 'צעצועים': 'toys', 'בובה': 'doll', 'בובות': 'dolls', 'לגו': 'lego', 'פאזל': 'puzzle', 'משחק קופסה': 'board game',
+
+    // Beauty & Health
+    'איפור': 'makeup', 'קרם': 'cream', 'שפתון': 'lipstick', 'מברשת': 'brush', 'בושם': 'perfume', 'שמפו': 'shampoo', 'סבון': 'soap',
+
+    // Sports & Outdoors
+    'ספורט': 'sport', 'טיולים': 'hiking', 'קמפינג': 'camping', 'אוהל': 'tent', 'שק שינה': 'sleeping bag', 'אופניים': 'bicycle', 'כדורגל': 'football',
+    'כדורסל': 'basketball',
+
+    // Automotive
+    'רכב': 'car', 'אביזרים לרכב': 'car accessories', 'כיסוי הגה': 'steering wheel cover', 'מצלמת דרך': 'dash cam',
+
+    // Office & School Supplies
+    'משרד': 'office', 'בית ספר': 'school', 'עט': 'pen', 'עיפרון': 'pencil', 'מחברת': 'notebook', 'קלמר': 'pencil case',
+
+    // Adjectives & Descriptors
+    'אלחוטיות': 'wireless', 'אלחוטי': 'wireless', 'אימון': 'workout', 'אימונים': 'workout', 'יוגה': 'yoga',
+    'חכם': 'smart', 'חכמה': 'smart', 'גב': 'back', 'אדום': 'red', 'אדומה': 'red', 'כחול': 'blue', 'כחולה': 'blue', 'ירוק': 'green', 'ירוקה': 'green',
+    'שחור': 'black', 'שחורה': 'black', 'לבן': 'white', 'לבנה': 'white', 'ורוד': 'pink', 'ורודה': 'pink', 'צהוב': 'yellow', 'צהובה': 'yellow',
+    'כתום': 'orange', 'כתומה': 'orange', 'סגול': 'purple', 'סגולה': 'purple', 'אפור': 'gray', 'אפורה': 'gray', 'אפורים': 'gray',
+    'גדול': 'large', 'גדולה': 'large', 'קטן': 'small', 'קטנה': 'small', 'ארוך': 'long', 'ארוכה': 'long', 'קצר': 'short', 'קצרה': 'short',
+    'חדש': 'new', 'חדשה': 'new', 'זול': 'cheap', 'זולה': 'cheap', 'נוח': 'comfortable', 'נוחה': 'comfortable',
+
+    // Demographics
     'גברים': 'men', 'לגבר': 'men', 'נשים': 'women', 'לאישה': 'women', 'ילדים': 'kids', 'ילד': 'boy', 'ילדה': 'girl', 'תינוק': 'baby', 'תינוקות': 'baby',
-    'נוח': 'comfortable', 'נוחה': 'comfortable'
+
+    // Popular Brands (for finding alternatives)
+    'נייק': 'nike', 'אדידס': 'adidas', 'זארה': 'zara', 'אפל': 'apple', 'סמסונג': 'samsung', 'שיאומי': 'xiaomi',
+    'לולולמון': 'lululemon', 'אלו יוגה': 'alo yoga', 'סקצ\'רס': 'skechers', 'קרוקס': 'crocs', 'דיסון': 'dyson',
+    'אנקר': 'anker', 'בייסוס': 'baseus', 'יוגרין': 'ugreen', 'סוני': 'sony', 'קנון': 'canon', 'ניקון': 'nikon',
+    'שיין': 'shein', 'מנגו': 'mango', 'ברשקה': 'bershka', 'אנדר ארמור': 'under armour', 'פומה': 'puma', 'ריבוק': 'reebok',
+    'לגו': 'lego', 'פלייסטיישן': 'playstation', 'אקסבוקס': 'xbox', 'נינטנדו': 'nintendo'
 };
 
 // Function to detect if a string contains Hebrew characters
