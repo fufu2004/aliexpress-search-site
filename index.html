@@ -8,9 +8,27 @@
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Assistant', sans-serif; }
-        .hero-bg { background-color: #f0f2f5; position: relative; overflow: hidden; }
-        .hero-bg::before { content: 'AI Shopping'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 15vw; font-weight: 800; color: rgba(0, 0, 0, 0.04); z-index: 1; pointer-events: none; }
-        .search-container { position: relative; z-index: 2; }
+        .hero-bg { 
+            background-color: #f0f2f5; 
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-bg::before {
+            content: 'AI Shopping';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 15vw;
+            font-weight: 800;
+            color: rgba(0, 0, 0, 0.04);
+            z-index: 1;
+            pointer-events: none;
+        }
+        .search-container {
+            position: relative;
+            z-index: 2;
+        }
         .loader { border: 5px solid #f3f3f3; border-top: 5px solid #ef4444; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .hidden { display: none; }
@@ -77,7 +95,7 @@
         const loadMoreContainer = document.getElementById('load-more-container');
         const loadMoreBtn = document.getElementById('load-more-btn');
         
-        const PROXY_BASE_URL = 'https://aliexpress-proxy-whm0.onrender.com';
+        const PROXY_ENDPOINT = 'https://aliexpress-proxy-whm0.onrender.com/search';
 
         let currentPage = 1;
         let currentQuery = '';
@@ -88,59 +106,23 @@
             const query = searchInput.value.trim();
             if (query) {
                 currentQuery = query;
-                fetchTextProducts(false);
+                fetchProducts(false); // New search, not appending
             }
         });
 
         loadMoreBtn.addEventListener('click', () => {
             if (!isLoading) {
-                fetchTextProducts(true);
+                fetchProducts(true); // Load more, appending
             }
         });
 
         imageSearchBtn.addEventListener('click', () => { imageUploadInput.click(); });
-        
         imageUploadInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file) {
-                fetchImageProducts(file);
-            }
+            if (file) { alert(`חיפוש תמונה עדיין בפיתוח. הקובץ שנבחר: ${file.name}`); }
         });
 
-        async function fetchImageProducts(file) {
-            isLoading = true;
-            resultsArea.innerHTML = '';
-            messageContainer.classList.add('hidden');
-            loaderContainer.classList.remove('hidden');
-            resultsTitle.classList.add('hidden');
-            loadMoreContainer.classList.add('hidden');
-
-            const formData = new FormData();
-            formData.append('image', file);
-
-            try {
-                const response = await fetch(`${PROXY_BASE_URL}/search-by-image`, {
-                    method: 'POST',
-                    body: formData
-                });
-                if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
-                const data = await response.json();
-
-                if (data.success && data.products.length > 0) {
-                    displayProducts(data.products, `תוצאות עבור תמונה`, parseImageSearchResults);
-                } else {
-                    displayMessage('לא נמצאו מוצרים דומים לתמונה שהעלית.');
-                }
-            } catch (error) {
-                console.error('Error fetching image products:', error);
-                displayMessage(`אופס! אירעה שגיאה בחיפוש התמונה: ${error.message}`);
-            } finally {
-                isLoading = false;
-                loaderContainer.classList.add('hidden');
-            }
-        }
-
-        async function fetchTextProducts(isAppending = false) {
+        async function fetchProducts(isAppending = false) {
             if (isLoading) return;
             isLoading = true;
 
@@ -153,12 +135,15 @@
 
             messageContainer.classList.add('hidden');
             loaderContainer.classList.remove('hidden');
-            if (isAppending) { loadMoreBtn.textContent = 'טוען...'; } 
-            else { resultsTitle.classList.add('hidden'); }
+            if (isAppending) {
+                loadMoreBtn.textContent = 'טוען...';
+            } else {
+                resultsTitle.classList.add('hidden');
+            }
             loadMoreContainer.classList.add('hidden');
 
             const params = new URLSearchParams({ keywords: currentQuery, page_no: currentPage });
-            const requestUrl = `${PROXY_BASE_URL}/search?${params.toString()}&_=${new Date().getTime()}`;
+            const requestUrl = `${PROXY_ENDPOINT}?${params.toString()}&_=${new Date().getTime()}`;
 
             try {
                 const response = await fetch(requestUrl);
@@ -173,17 +158,21 @@
                 const isFinished = resultData?.is_finished === 'true' || productsList.length === 0;
                 
                 if (productsList.length > 0) {
-                    displayProducts(productsList, `תוצאות עבור: "${currentQuery}"`, parseTextSearchResults, isAppending);
+                    displayProducts(productsList, isAppending);
                     if (!isFinished) {
                         loadMoreContainer.classList.remove('hidden');
                     }
                 } else {
-                    if (!isAppending) { displayMessage('לא נמצאו מוצרים התואמים לחיפוש שלך.'); }
+                    if (!isAppending) {
+                        displayMessage('לא נמצאו מוצרים התואמים לחיפוש שלך.');
+                    }
                 }
 
             } catch (error) {
-                console.error('Error fetching text products:', error);
-                if (!isAppending) { displayMessage(`אופס! אירעה שגיאה: ${error.message}`); }
+                console.error('Error fetching products:', error);
+                if (!isAppending) {
+                    displayMessage(`אופס! אירעה שגיאה: ${error.message}`);
+                }
             } finally {
                 isLoading = false;
                 loaderContainer.classList.add('hidden');
@@ -191,41 +180,65 @@
             }
         }
         
-        function parseTextSearchResults(apiProducts) {
+        function parseApiResults(apiProducts) {
             if (!Array.isArray(apiProducts)) { return []; }
             return apiProducts.map(product => {
                 let price = product.sale_price || 'N/A';
                 let currencySymbol = product.sale_price_currency === 'USD' ? '$' : '₪';
                 let url = product.promotion_link || product.product_detail_url || '#';
-                if (url.includes('aliexpress.com')) { url = url.replace('www.aliexpress.com', 'he.aliexpress.com'); }
-                return { title: product.product_title || 'No Title', price: `${currencySymbol}${price}`, image: product.product_main_image_url || 'https://placehold.co/400x400/e2e8f0/94a3b8?text=No+Image', url: url };
+                
+                if (url.includes('aliexpress.com')) {
+                    url = url.replace('www.aliexpress.com', 'he.aliexpress.com');
+                }
+
+                return {
+                    title: product.product_title || 'No Title',
+                    price: `${currencySymbol}${price}`,
+                    image: product.product_main_image_url || 'https://placehold.co/400x400/e2e8f0/94a3b8?text=No+Image',
+                    url: url,
+                };
             });
         }
 
-        function parseImageSearchResults(apiProducts) {
-             if (!Array.isArray(apiProducts)) { return []; }
-            return apiProducts.map(product => {
-                let url = product.url || '#';
-                if (url.includes('aliexpress.com')) { url = url.replace('www.aliexpress.com', 'he.aliexpress.com'); }
-                return { title: product.title || 'No Title', price: product.price || 'N/A', image: product.image || 'https://placehold.co/400x400/e2e8f0/94a3b8?text=No+Image', url: url };
-            });
-        }
-
-        function displayProducts(products, title, parserFn, isAppending = false) {
-            const parsedProducts = parserFn(products);
+        function displayProducts(products, isAppending) {
+            const parsedProducts = parseApiResults(products);
             const newHtml = parsedProducts.map(p => createProductCard(p)).join('');
 
             if (isAppending) {
                 resultsArea.insertAdjacentHTML('beforeend', newHtml);
             } else {
                 resultsArea.innerHTML = newHtml;
-                resultsTitle.textContent = title;
+                resultsTitle.textContent = `תוצאות עבור: "${currentQuery}"`;
                 resultsTitle.classList.remove('hidden');
             }
         }
 
-        function createProductCard(product) { /* ... (function remains the same) ... */ }
-        function displayMessage(message) { /* ... (function remains the same) ... */ }
+        function createProductCard(product) {
+            return `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden transform hover:-translate-y-1 transition duration-300 flex flex-col">
+                    <a href="${product.url}" target="_blank" rel="noopener noreferrer" class="block">
+                        <img src="${product.image}" alt="${product.title}" class="w-full h-48 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x400/e2e8f0/94a3b8?text=Image+Unavailable';">
+                    </a>
+                    <div class="p-4 flex-grow flex flex-col">
+                        <h3 class="text-sm font-semibold text-gray-800 flex-grow">
+                            <a href="${product.url}" target="_blank" rel="noopener noreferrer" class="hover:text-red-500">${product.title}</a>
+                        </h3>
+                        <div class="mt-2 flex justify-between items-center">
+                            <span class="text-lg font-bold text-red-600">${product.price}</span>
+                            <a href="${product.url}" target="_blank" rel="noopener noreferrer" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-3 rounded-lg transition">
+                                לרכישה
+                            </a>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        function displayMessage(message) {
+            resultsArea.innerHTML = '';
+            resultsTitle.classList.add('hidden');
+            messageContainer.textContent = message;
+            messageContainer.classList.remove('hidden');
+        }
     </script>
 
 </body>
