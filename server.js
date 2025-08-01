@@ -1,7 +1,7 @@
 // server.js
-// --- VERSION 10.0 (Final Local Version) ---
+// --- VERSION 10.1 (Final Local Version) ---
 // This version contains the new, valid tokens and all the latest features,
-// including the robust local translation dictionary.
+// including a more robust local translation dictionary that handles punctuation.
 
 const express = require('express');
 const cors = require('cors');
@@ -71,7 +71,8 @@ function translateHebrewToEnglish(text) {
         return text;
     }
     console.log(`Translating Hebrew query with internal dictionary: "${text}"`);
-    const words = text.split(/\s+/);
+    // --- IMPROVEMENT: Remove common punctuation before splitting ---
+    const words = text.replace(/[.,!?;:"']/g, '').split(/\s+/);
     const translatedWords = words
         .map(word => translationMap[word.trim().toLowerCase()])
         .filter(Boolean);
@@ -208,3 +209,4 @@ app.get('/search', async (req, res) => {
 app.listen(port, () => {
     console.log(`Proxy server listening at http://localhost:${port}`);
 });
+
