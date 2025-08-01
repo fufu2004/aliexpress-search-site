@@ -186,11 +186,18 @@
             return apiProducts.map(product => {
                 let price = product.sale_price || 'N/A';
                 let currencySymbol = product.sale_price_currency === 'USD' ? '$' : '₪';
+                let url = product.promotion_link || product.product_detail_url || '#';
+                
+                // --- NEW: Convert URL to Hebrew version ---
+                if (url.includes('aliexpress.com')) {
+                    url = url.replace('www.aliexpress.com', 'he.aliexpress.com');
+                }
+
                 return {
                     title: product.product_title || 'No Title',
                     price: `${currencySymbol}${price}`,
                     image: product.product_main_image_url || 'https://placehold.co/400x400/e2e8f0/94a3b8?text=No+Image',
-                    url: product.promotion_link || product.product_detail_url || '#',
+                    url: url,
                 };
             });
         }
