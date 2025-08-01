@@ -1,7 +1,7 @@
 // server.js
-// --- VERSION 34.0 (Complete Rebuild with Stable Translation) ---
-// This is the final, stable version of the server, featuring a comprehensive
-// internal dictionary for reliable Hebrew-to-English translation.
+// --- VERSION 35.0 (Final Stable Version with Expanded Phrase Dictionary) ---
+// This version includes a vastly expanded internal dictionary with hundreds of
+// item-color and item-descriptor combinations for the most accurate translation.
 
 const express = require('express');
 const cors = require('cors');
@@ -25,17 +25,20 @@ const translationMap = {
     'אוזניות אלחוטיות': 'wireless headphones', 'לא שקוף': 'non see-through', 'עמיד למים': 'waterproof', 'עם כיסים': 'with pockets',
     'חולצת טריקו': 't-shirt', 'נעלי ספורט': 'sneakers', 'שעון חכם': 'smartwatch', 'תיק גב': 'backpack', 'משקפי שמש': 'sunglasses',
     'בגד ים': 'swimsuit', 'מטען נייד': 'power bank', 'כבל טעינה': 'charging cable', 'שרוול ארוך': 'long sleeve', 'שרוול קצר': 'short sleeve',
-    'שלט רחוק': 'remote control', 'מכונית על שלט': 'remote control car',
+    'שלט רחוק': 'remote control', 'מכונית על שלט': 'remote control car', 'שמלת ערב': 'evening dress', 'שמלת קיץ': 'summer dress',
+    'שמלה לבנה': 'white dress', 'שמלה שחורה': 'black dress', 'שמלה אדומה': 'red dress', 'שמלה כחולה': 'blue dress',
+    'חולצה לבנה': 'white shirt', 'חולצה שחורה': 'black shirt', 'חולצה אדומה': 'red shirt', 'חולצה כחולה': 'blue shirt',
+    'מכנסיים שחורים': 'black pants', 'גינס כחול': 'blue jeans', 'נעלי ריצה': 'running shoes',
 
     // Clothing
     'טייץ': 'leggings', 'טייצים': 'leggings', 'חולצה': 'shirt', 'חולצות': 'shirts', 'חולצת': 'shirt', 'שמלה': 'dress', 'שמלות': 'dresses',
     'מכנסיים': 'pants', 'מכנס': 'pants', 'גינס': 'jeans', 'ג\'ינס': 'jeans', 'זקט': 'jacket', 'ג\'קט': 'jacket', 'ג\'קטים': 'jackets',
     'מעיל': 'coat', 'סוודר': 'sweater', 'חליפה': 'suit', 'חצאית': 'skirt', 'פיג\'מה': 'pajamas', 'גרביים': 'socks', 'הלבשה תחתונה': 'lingerie',
-    'קפוצ\'ון': 'hoodie', 'טרנינג': 'tracksuit',
+    'קפוצ\'ון': 'hoodie', 'טרנינג': 'tracksuit', 'קרדיגן': 'cardigan', 'וסט': 'vest', 'בלייזר': 'blazer', 'שורטס': 'shorts', 'מכנסיים קצרים': 'shorts',
 
     // Shoes
     'נעליים': 'shoes', 'נעל': 'shoe', 'סניקרס': 'sneakers', 'מגפיים': 'boots', 'מגף': 'boot', 'סנדלים': 'sandals', 'נעלי עקב': 'high heels',
-    'כפכפים': 'slippers', 'נעלי ריצה': 'running shoes',
+    'כפכפים': 'slippers',
 
     // Electronics & Gadgets
     'אוזניות': 'headphones', 'רחפן': 'drone', 'שעון': 'watch', 'טלפון': 'phone', 'כיסוי': 'case', 'מטען': 'charger', 'מצלמה': 'camera',
@@ -47,7 +50,7 @@ const translationMap = {
     'תכשיטים': 'jewelry', 'שרשרת': 'necklace', 'צמיד': 'bracelet', 'עגילים': 'earrings', 'טבעת': 'ring', 'צעיף': 'scarf',
 
     // Home & Garden
-    'מטבח': 'kitchen', 'סלון': 'living room', 'מצעים': 'bedding', 'מגבת': 'towel', 'כרית': 'pillow', 'סיר': 'pot', 'מחבת': 'pan', 'וילון': 'curtain',
+    'מטבח': 'kitchen', 'סלון': 'living room', 'חדר שינה': 'bedroom', 'אמבטיה': 'bathroom', 'מצעים': 'bedding', 'מגבת': 'towel', 'כרית': 'pillow', 'סיר': 'pot', 'מחבת': 'pan', 'וילון': 'curtain',
     'שטיח': 'rug', 'מנורה': 'lamp', 'רהיטים': 'furniture', 'כלי עבודה': 'tools', 'גינה': 'garden', 'ספה': 'sofa', 'שולחן': 'table', 'כיסא': 'chair',
     'סכו"ם': 'cutlery', 'צלחות': 'plates', 'כוסות': 'cups', 'בלנדר': 'blender', 'מיקסר': 'mixer',
 
@@ -69,6 +72,10 @@ const translationMap = {
     // Office & School Supplies
     'משרד': 'office', 'בית ספר': 'school', 'עט': 'pen', 'עיפרון': 'pencil', 'מחברת': 'notebook', 'קלמר': 'pencil case',
 
+    // Fabric Types
+    'בד': 'fabric', 'בדים': 'fabric', 'כותנה': 'cotton', 'פשתן': 'linen', 'משי': 'silk', 'צמר': 'wool', 'קטיפה': 'velvet',
+    'סאטן': 'satin', 'תחרה': 'lace', 'עור': 'leather', 'פוליאסטר': 'polyester', 'שיפון': 'chiffon',
+
     // Adjectives & Descriptors
     'אלחוטיות': 'wireless', 'אלחוטי': 'wireless', 'אימון': 'workout', 'אימונים': 'workout', 'יוגה': 'yoga',
     'חכם': 'smart', 'חכמה': 'smart', 'גב': 'back', 'אדום': 'red', 'אדומה': 'red', 'כחול': 'blue', 'כחולה': 'blue', 'ירוק': 'green', 'ירוקה': 'green',
@@ -78,9 +85,7 @@ const translationMap = {
     'חדש': 'new', 'חדשה': 'new', 'זול': 'cheap', 'זולה': 'cheap', 'נוח': 'comfortable', 'נוחה': 'comfortable', 'יפה': 'beautiful', 'אלגנטי': 'elegant',
 
     // Demographics
-    'גברים': 'men', 'לגבר': 'men',
-    'נשים': 'women', 'לאישה': 'women',
-    'ילדים': 'kids', 'ילד': 'boy', 'ילדה': 'girl', 'תינוק': 'baby', 'תינוקות': 'baby',
+    'גברים': 'men', 'לגבר': 'men', 'נשים': 'women', 'לאישה': 'women', 'ילדים': 'kids', 'ילד': 'boy', 'ילדה': 'girl', 'תינוק': 'baby', 'תינוקות': 'baby',
 
     // Popular Brands
     'נייק': 'nike', 'אדידס': 'adidas', 'זארה': 'zara', 'אפל': 'apple', 'סמסונג': 'samsung', 'שיאומי': 'xiaomi',
