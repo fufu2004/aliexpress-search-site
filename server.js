@@ -1,7 +1,7 @@
 // server.js
-// --- VERSION 17.0 (Final Version with AI-Powered Translation) ---
-// This version replaces the internal dictionary with a call to a live AI model
-// for accurate, real-time translation of all Hebrew queries.
+// --- VERSION 19.0 (Final Version with Hybrid AI & Dictionary Translation) ---
+// This version prioritizes AI for translation to understand full sentences,
+// but includes the robust internal dictionary as a reliable fallback.
 
 const express = require('express');
 const cors = require('cors');
@@ -19,6 +19,30 @@ let ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 let REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 const TRACKING_ID = process.env.TRACKING_ID;
 
+// --- Comprehensive, local translation dictionary (as a fallback) ---
+const translationMap = {
+    'אוזניות אלחוטיות': 'wireless headphones', 'חולצת טריקו': 't-shirt', 'נעלי ספורט': 'sneakers', 'שעון חכם': 'smartwatch', 'תיק גב': 'backpack',
+    'טייץ': 'leggings', 'טייצים': 'leggings',
+    'חולצה': 'shirt', 'חולצות': 'shirts', 'חולצת': 'shirt',
+    'שמלה': 'dress', 'שמלות': 'dresses',
+    'מכנסיים': 'pants', 'מכנס': 'pants',
+    'גינס': 'jeans', 'ג\'ינס': 'jeans',
+    'זקט': 'jacket', 'ג\'קט': 'jacket', 'ג\'קטים': 'jackets',
+    'מעיל': 'coat', 'סוודר': 'sweater', 'חליפה': 'suit', 'חצאית': 'skirt', 'בגד ים': 'swimsuit',
+    'נעליים': 'shoes', 'נעל': 'shoe',
+    'ספורט': 'sport', 'סניקרס': 'sneakers', 'מגפיים': 'boots', 'מגף': 'boot', 'סנדלים': 'sandals',
+    'אוזניות': 'headphones',
+    'אלחוטיות': 'wireless', 'אלחוטי': 'wireless',
+    'רחפן': 'drone', 'שעון': 'watch', 'טלפון': 'phone', 'כיסוי': 'case', 'מטען': 'charger', 'מצלמה': 'camera',
+    'חכם': 'smart', 'חכמה': 'smart',
+    'תיק': 'bag', 'תיקים': 'bags', 'גב': 'back', 'ארנק': 'wallet', 'כובע': 'hat', 'כובעים': 'hats', 'משקפי שמש': 'sunglasses',
+    'תכשיטים': 'jewelry', 'שרשרת': 'necklace', 'צמיד': 'bracelet',
+    'אדום': 'red', 'אדומה': 'red', 'כחול': 'blue', 'כחולה': 'blue', 'ירוק': 'green', 'ירוקה': 'green', 'שחור': 'black', 'שחורה': 'black',
+    'לבן': 'white', 'לבנה': 'white', 'ורוד': 'pink', 'ורודה': 'pink', 'צהוב': 'yellow', 'צהובה': 'yellow', 'כתום': 'orange', 'כתומה': 'orange',
+    'סגול': 'purple', 'סגולה': 'purple', 'אפור': 'gray', 'אפורה': 'gray', 'אפורים': 'gray',
+    'גברים': 'men', 'לגבר': 'men', 'נשים': 'women', 'לאישה': 'women', 'ילדים': 'kids', 'ילד': 'boy', 'ילדה': 'girl', 'תינוק': 'baby', 'תינוקות': 'baby'
+};
+
 // Function to detect if a string contains Hebrew characters
 function isHebrew(text) {
     if (!text) return false;
@@ -26,24 +50,39 @@ function isHebrew(text) {
     return hebrewRegex.test(text);
 }
 
-// --- NEW: AI-Powered Translation Function ---
+// Fallback Translation Function (using internal dictionary)
+function translateWithInternalDictionary(text) {
+    console.log(`Translating Hebrew query with internal dictionary: "${text}"`);
+    const words = text.replace(/[.,!?;:"']/g, '').split(/\s+/);
+    const translatedWords = words
+        .map(word => translationMap[word.trim().toLowerCase()])
+        .filter(Boolean);
+
+    if (translatedWords.length > 0) {
+        const finalQuery = translatedWords.join(' ');
+        console.log(`Successfully translated with dictionary to: "${finalQuery}"`);
+        return finalQuery;
+    } else {
+        console.log(`No translatable keywords found in "${text}", using original query.`);
+        return text;
+    }
+}
+
+// Primary AI-Powered Translation Function
 async function translateHebrewToEnglish(text) {
     if (!isHebrew(text)) {
-        return text; // Return original text if not Hebrew
+        return text;
     }
 
-    console.log(`Translating Hebrew with AI: "${text}"`);
+    console.log(`Attempting to translate with AI: "${text}"`);
     const fetch = (await import('node-fetch')).default;
     
-    // The prompt is designed to get a clean, keyword-focused translation
-    const prompt = `Translate the following Hebrew e-commerce search query into a concise English equivalent. Return only the translated keywords, nothing else. For example, for "חולצה אדומה יפה לגברים", return "red shirt for men".\n\nHebrew: "${text}"\nEnglish:`;
+    const prompt = `Translate the following Hebrew e-commerce search query into a concise English equivalent. Return only the translated keywords. For example, for "אני מחפש ג'קטים אפורים", return "gray jackets".\n\nHebrew: "${text}"\nEnglish:`;
 
-    const geminiApiKey = ""; // This key is provided by the execution environment
+    const geminiApiKey = ""; // Provided by the execution environment
     const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
 
-    const payload = {
-        contents: [{ parts: [{ text: prompt }] }]
-    };
+    const payload = { contents: [{ parts: [{ text: prompt }] }] };
 
     try {
         const response = await fetch(geminiApiUrl, {
@@ -53,23 +92,22 @@ async function translateHebrewToEnglish(text) {
         });
 
         if (!response.ok) {
-            console.error("AI Translation API request failed:", response.status, await response.text());
-            return text; // Fallback to original text on failure
+            throw new Error(`AI API request failed with status: ${response.status}`);
         }
 
         const result = await response.json();
         const translatedText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
         if (translatedText) {
-            console.log(`Successfully translated to: "${translatedText}"`);
+            console.log(`Successfully translated with AI to: "${translatedText}"`);
             return translatedText;
         } else {
-            console.error("Invalid response structure from AI Translation API:", result);
-            return text; // Fallback
+            throw new Error("Invalid response structure from AI API");
         }
     } catch (error) {
-        console.error("Error calling AI Translation API:", error);
-        return text; // Fallback
+        console.error("AI translation failed:", error.message);
+        console.log("Falling back to internal dictionary translation.");
+        return translateWithInternalDictionary(text); // Fallback to the internal dictionary
     }
 }
 
@@ -110,7 +148,6 @@ async function refreshAccessToken() {
     const requestUrl = `${API_BASE_URL}${API_PATH}?${new URLSearchParams(params).toString()}`;
 
     try {
-        console.log(`Sending refresh token request to: ${requestUrl}`);
         const response = await fetch(requestUrl, { method: 'POST' });
         const data = await response.json();
 
